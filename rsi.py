@@ -88,6 +88,76 @@ def rsi(rs):
 
 df['RSI'] = rsi(df['RS'])  # Storing the list of values of the RSI on a df
 
+# The next part is to create a function wich allow as to know if whats the status of the stock, for this we would define like this:
+# 10 means Overbought 
+# 11 means UpwardTrend
+# 20 means Oversold
+# 22 means DownwardTrend
+# 90 for value we are not going to work (Nan)
+ 
+def status(value):
+    # Creating a df with the RSI with a condition
+    mask = (value > 70)  # Condition where it only works with the values greater than 70
+    v1 = 10  # If the value is greter than 70, the value changes to 10
+    v2 = value  # If not, it will remain the same
+    df['Status'] = np.where(mask, v1, v2)  # Creates the df with the conditions 
+
+    # Function to delete all the Nan values from the df, wich has a relationship with the period
+    x = 0
+    while x != period:
+        df['Status'][x] = 90
+        x += 1 
+
+    # For loop to find the values that are below 30 and assign them a value of 20, in case they aren't, it will remain the same
+    x = 0 
+    for item in df['Status']:
+        if item == 10:
+            df['Status'][x] = item
+            x += 1
+        elif item < 30:
+            df['Status'][x] = 20
+            x += 1
+        else:
+            df['Status'][x] = item
+            x += 1
+
+    # For loop to find the trend of the values that are between 70 and 30
+    # The For loop works like this, if the current value is 0, 10 or 20 it will reamain the same 
+    # If the values are between, this are the conditions:
+    # If the value is not 10, but the previous value was 10, then we assign that value with 22, wich means downward
+    # If the value is not 10, but the previuos value was 22, then we assign that value with 22, wich means it continous the downward
+    # If the value is not 20, but the previous value was 20, then we assign that value with 11, wich means upward trend
+    # If the value is not 20, but the previous value was 11, then we assign that value with 11, wich means it continous the upward
+    # In case the non of the conditions works, then we would assign the variable with 90
+    x = 0
+    for item in df['Status']:
+        if item == 90:
+            df['Status'][x] = 90
+            x += 1
+        elif item == 10:
+            df['Status'][x] = item
+            x += 1
+        elif item == 20:
+            df['Status'][x] = item
+            x += 1
+        elif (item != 10) & (df['Status'][x-1] == 10):
+            df['Status'][x] = 22
+            x += 1
+        elif (item != 10) & (df['Status'][x-1] == 22):
+            df['Status'][x] = 22
+            x += 1
+        elif (item != 20) & (df['Status'][x-1] == 20):
+            df['Status'][x] = 11
+            x += 1
+        elif (item != 20) & (df['Status'][x-1] == 11):
+            df['Status'][x] = 11
+            x += 1
+        else: 
+            df['Status'][x] = 90
+            x += 1
+
+status(df['RSI']) # Calling the function to get the status
+
 # Graphing data
 # Values for creating a dividing line at the value of 70
 x_values_70 = [df.index[0], df.index[-1]]
@@ -97,7 +167,21 @@ y_values_70 = [70, 70]
 x_values_30 = [df.index[0], df.index[-1]]
 y_values_30 = [30, 30]
 
+# We create a variable call status, where we plug the last value of the status df, and see what does it mean
+if df['Status'][-1] == 10:
+    status = "Overbought"
+elif df['Status'][-1] == 20:
+    status = "Oversold"
+elif df['Status'][-1] == 11:
+    status = "In the middle of an UPWARD TREND"
+elif df['Status'][-1] == 22:
+    status = "In the middle of a DOWNWARD TREND"
+else:
+    status = "IDK"
 
+print("------------------------------------------------------------")
+print("Status: {}".format(status)) # Printing the status of the stock
+print("------------------------------------------------------------")
 print(df)  # Printing the dataFrame
 
 # Plotting the RSI Values, with the 2 dividing lines
